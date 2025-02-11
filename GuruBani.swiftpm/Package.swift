@@ -8,13 +8,13 @@ import PackageDescription
 import AppleProductTypes
 
 let package = Package(
-    name: "EkamBani",
+    name: "GuruBani",
     platforms: [
         .iOS("16.0")
     ],
     products: [
         .iOSApplication(
-            name: "EkamBani",
+            name: "GuruBani",
             targets: ["AppModule"],
             bundleIdentifier: "Galgotias.EkamBani",
             teamIdentifier: "3MV965C844",
@@ -37,8 +37,11 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "AppModule",
-            path: "."
+            path: ".",
+            resources: [
+                .process("converted.json")
+            ]
         )
     ],
-    swiftLanguageVersions: [.v6]
+    swiftLanguageVersions: [.version("6")]
 )
