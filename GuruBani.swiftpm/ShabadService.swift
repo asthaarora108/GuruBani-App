@@ -19,27 +19,8 @@ class ShabadService {
     }
 
     static func loadShabadsFromDocuments() -> [Shabad] {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let jsonURL = documentsPath.appendingPathComponent("converted.json")
-        
-        do {
-            let data = try Data(contentsOf: jsonURL)
-            let decoder = JSONDecoder()
-            let pages = try decoder.decode([ShabadPage].self, from: data)
-            
-            return pages.enumerated().map { index, page in
-                Shabad(
-                    id: index + 1,
-                    title: "Page \(page.page)",
-                    punjabi: page.content,
-                    hinglish: "",
-                    english: ""
-                )
-            }
-        } catch {
-            print("Error loading from documents: \(error)")
-            return []
-        }
+        // Since the JSON file is removed, we can return an empty array
+        return [] // Return an empty array instead of trying to load from a file
     }
 }
 

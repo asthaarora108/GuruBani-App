@@ -39,7 +39,7 @@ let package = Package(
             name: "AppModule",
             path: ".",
             resources: [
-                .process("converted.json")
+                // .process("converted.json")
             ]
         )
     ],
