@@ -27,21 +27,48 @@ struct ShabadDetailView: View {
                         .offset(y: isAnimating ? 0 : -20)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimating)
                     
-                    Button(action: {
-                        if isPlaying {
-                            audioPlayer?.pause()
-                        } else {
-                            playAudio(for: shabad.title)
+                    HStack {
+                        // Backward 5 seconds button
+                        Button(action: {
+                            audioPlayer?.currentTime -= 5 // Rewind 5 seconds
+                        }) {
+                            Image(systemName: "gobackward.5")
+                                .font(.title) // Small size
+                                .padding(8) // Adjust padding for small size
+                                .background(Color.orange)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
                         }
-                        isPlaying.toggle()
-                    }) {
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                            .font(.largeTitle)
-                            .padding()
-                            .frame(width: 60, height: 60)
-                            .background(Color.orange)
-                            .foregroundColor(.white)
-                            .clipShape(Circle())
+                        
+                        // Play/Pause button
+                        Button(action: {
+                            if isPlaying {
+                                audioPlayer?.pause()
+                            } else {
+                                playAudio(for: shabad.title)
+                            }
+                            isPlaying.toggle()
+                        }) {
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.largeTitle)
+                                .padding()
+                                .frame(width: 60, height: 60)
+                                .background(Color.orange)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                        }
+
+                        // Forward 5 seconds button
+                        Button(action: {
+                            audioPlayer?.currentTime += 5 // Forward 5 seconds
+                        }) {
+                            Image(systemName: "goforward.5")
+                                .font(.title) // Small size
+                                .padding(8) // Adjust padding for small size
+                                .background(Color.orange)
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                        }
                     }
                     .padding(.bottom, 20)
                     
