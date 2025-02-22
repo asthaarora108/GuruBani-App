@@ -1,9 +1,12 @@
 import SwiftUI
+import AVFoundation
 
 struct ShabadDetailView: View {
     let shabad: Shabad
     @State private var selectedLanguage: Language = .punjabi
     @State private var isAnimating = false
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
     
     var body: some View {
         ScrollView {
@@ -54,6 +57,26 @@ struct ShabadDetailView: View {
                         .opacity(isAnimating ? 1 : 0)
                         .scaleEffect(isAnimating ? 1 : 0.9)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: isAnimating)
+
+                    Spacer()
+                    Button(action: {
+                        if isPlaying {
+                            audioPlayer?.pause()
+                        } else {
+                            playAudio(for: shabad.title)
+                        }
+                        isPlaying.toggle()
+                    }) {
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.largeTitle)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
+                    .padding(.bottom, 20)
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.easeInOut.delay(0.3), value: isAnimating)
                 }
                 .padding(.bottom, 40)
             }
@@ -65,8 +88,30 @@ struct ShabadDetailView: View {
         }
         .onChange(of: selectedLanguage) { _ in
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                // This will trigger animation when language changes
             }
+        }
+    }
+    private func playAudio(for title: String) {
+        let audioFileName: String
+        switch title {
+        case "Mool Mantar":
+            audioFileName = "mool_mantar"
+        case "Japji Sahib":
+            audioFileName = "japji_sahib"
+        case "So Dar (Rehras)":
+            audioFileName = "so_dar"
+        case "Sohila":
+            audioFileName = "sohila"
+        default:
+            return
+        }
+        
+        guard let url = Bundle.main.url(forResource: audioFileName, withExtension: "mp3") else { return }
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.play()
+        } catch {
+            print("Error playing audio: \(error.localizedDescription)")
         }
     }
     
