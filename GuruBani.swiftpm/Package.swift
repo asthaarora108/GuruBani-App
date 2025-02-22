@@ -38,7 +38,10 @@ let package = Package(
         .executableTarget(
             name: "AppModule",
             path: ".",
-            resources: [.copy("mool_mantar.mp3")]
+            resources: [
+                            .copy("mool_mantar.mp3"),
+                            .copy("japji_sahib.mp3")
+                        ]
         )
     ],
     swiftLanguageVersions: [.version("6")]
