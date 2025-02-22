@@ -27,6 +27,24 @@ struct ShabadDetailView: View {
                         .offset(y: isAnimating ? 0 : -20)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimating)
                     
+                    Button(action: {
+                        if isPlaying {
+                            audioPlayer?.pause()
+                        } else {
+                            playAudio(for: shabad.title)
+                        }
+                        isPlaying.toggle()
+                    }) {
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.largeTitle)
+                            .padding()
+                            .frame(width: 60, height: 60)
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
+                    .padding(.bottom, 20)
+                    
                     Picker("Language", selection: $selectedLanguage) {
                         ForEach(Language.allCases, id: \.self) { language in
                             Text(language.rawValue).tag(language)
@@ -59,24 +77,6 @@ struct ShabadDetailView: View {
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: isAnimating)
 
                     Spacer()
-                    Button(action: {
-                        if isPlaying {
-                            audioPlayer?.pause()
-                        } else {
-                            playAudio(for: shabad.title)
-                        }
-                        isPlaying.toggle()
-                    }) {
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                            .font(.largeTitle)
-                            .padding()
-                            .background(Color.orange)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .padding(.bottom, 20)
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.easeInOut.delay(0.3), value: isAnimating)
                 }
                 .padding(.bottom, 40)
             }

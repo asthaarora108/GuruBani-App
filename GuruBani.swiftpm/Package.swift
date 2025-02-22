@@ -40,7 +40,9 @@ let package = Package(
             path: ".",
             resources: [
                             .copy("mool_mantar.mp3"),
-                            .copy("japji_sahib.mp3")
+                            .copy("japji_sahib.mp3"),
+                            .copy("so_dar.mp3"),
+                            .copy("sohila.mp3")
                         ]
         )
     ],
