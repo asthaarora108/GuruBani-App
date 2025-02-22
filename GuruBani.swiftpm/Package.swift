@@ -38,9 +38,7 @@ let package = Package(
         .executableTarget(
             name: "AppModule",
             path: ".",
-            resources: [
-                // .process("converted.json")
-            ]
+            resources: [.copy("mool_mantar.mp3")]
         )
     ],
     swiftLanguageVersions: [.version("6")]

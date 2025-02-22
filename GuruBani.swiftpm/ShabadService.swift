@@ -19,8 +19,7 @@ class ShabadService {
     }
 
     static func loadShabadsFromDocuments() -> [Shabad] {
-        // Since the JSON file is removed, we can return an empty array
-        return [] // Return an empty array instead of trying to load from a file
+        return [] 
     }
 }
 
