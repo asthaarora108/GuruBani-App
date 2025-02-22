@@ -54,17 +54,6 @@ struct ShabadDetailView: View {
                         .opacity(isAnimating ? 1 : 0)
                         .scaleEffect(isAnimating ? 1 : 0.9)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: isAnimating)
-                    
-                    if selectedLanguage != .punjabi {
-                        Text(shabad.punjabi)
-                            .font(.system(size: 18, design: .serif))
-                            .foregroundColor(.secondary)
-                            .padding()
-                            .multilineTextAlignment(.center)
-                            .opacity(isAnimating ? 1 : 0)
-                            .scaleEffect(isAnimating ? 1 : 0.9)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: isAnimating)
-                    }
                 }
                 .padding(.bottom, 40)
             }
