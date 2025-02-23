@@ -28,19 +28,17 @@ struct ShabadDetailView: View {
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimating)
                     
                     HStack {
-                        // Backward 5 seconds button
                         Button(action: {
-                            audioPlayer?.currentTime -= 5 // Rewind 5 seconds
+                            audioPlayer?.currentTime -= 5
                         }) {
                             Image(systemName: "gobackward.5")
-                                .font(.title) // Small size
-                                .padding(8) // Adjust padding for small size
+                                .font(.title)
+                                .padding(8)
                                 .background(Color.orange)
                                 .foregroundColor(.white)
                                 .clipShape(Circle())
                         }
                         
-                        // Play/Pause button
                         Button(action: {
                             if isPlaying {
                                 audioPlayer?.pause()
@@ -58,13 +56,12 @@ struct ShabadDetailView: View {
                                 .clipShape(Circle())
                         }
 
-                        // Forward 5 seconds button
                         Button(action: {
-                            audioPlayer?.currentTime += 5 // Forward 5 seconds
+                            audioPlayer?.currentTime += 5
                         }) {
                             Image(systemName: "goforward.5")
-                                .font(.title) // Small size
-                                .padding(8) // Adjust padding for small size
+                                .font(.title)
+                                .padding(8) 
                                 .background(Color.orange)
                                 .foregroundColor(.white)
                                 .clipShape(Circle())

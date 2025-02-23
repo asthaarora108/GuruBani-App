@@ -1,10 +1,3 @@
-//
-//  File.swift
-//  EkamBani
-//
-//  Created by Astha on 11/02/25.
-//
-
 import Foundation
 
 
