@@ -20,7 +20,7 @@ let package = Package(
             teamIdentifier: "3MV965C844",
             displayVersion: "1.0",
             bundleVersion: "1",
-            appIcon: .placeholder(icon: .paper),
+            appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.orange),
             supportedDeviceFamilies: [
                 .pad,
@@ -39,11 +39,11 @@ let package = Package(
             name: "AppModule",
             path: ".",
             resources: [
-                            .copy("mool_mantar.mp3"),
-                            .copy("japji_sahib.mp3"),
-                            .copy("so_dar.mp3"),
-                            .copy("sohila.mp3")
-                        ]
+                .copy("mool_mantar.mp3"),
+                .copy("japji_sahib.mp3"),
+                .copy("so_dar.mp3"),
+                .copy("sohila.mp3")
+            ]
         )
     ],
     swiftLanguageVersions: [.version("6")]
