@@ -4,7 +4,6 @@
 
 Bringing the spiritual wisdom of **Sri Guru Granth Sahib Ji** to your fingertips with easy navigation, transliteration, and translations — for learners, devotees, and seekers worldwide.
 
----
 
 ## **Features**
 
@@ -19,7 +18,6 @@ Bringing the spiritual wisdom of **Sri Guru Granth Sahib Ji** to your fingertips
 
 🎨 **Clean & Minimal UI** – A serene, distraction-free reading experience to stay connected with the teachings.
 
----
 
 ## **Why GuruBani?**
 
@@ -29,13 +27,11 @@ Millions of Sikhs and spiritual seekers wish to connect with the **Guru Granth S
 - A **lightweight, offline-friendly** design  
 - **Accessible learning** for all ages and backgrounds
 
----
 
 ## **Built With**
 
 - **Swift & SwiftUI** – Smooth, modern, and intuitive Apple experience.  
 - **JSON-based Data Storage** – Efficient loading of Gurbani with meanings and transliterations.
 
----
 
 🙏 *May this app help you connect deeply with the eternal wisdom of Guru Granth Sahib Ji.*
