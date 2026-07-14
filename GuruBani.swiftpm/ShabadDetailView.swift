@@ -3,7 +3,6 @@ import SwiftUI
 struct ShabadDetailView: View {
     let shabad: Shabad
 
-    @State private var selectedLanguage: Language = .punjabi
     @State private var isAnimating = false
     @State private var isScrubbing = false
 
@@ -11,70 +10,209 @@ struct ShabadDetailView: View {
     // across view re-renders). Published changes redraw the scrubber.
     @StateObject private var audio = AudioPlayerManager()
 
-    // Reader text scale persists across launches via @AppStorage (UserDefaults).
-    // 1.0 == the original size; clamped to a sensible, accessible range below.
+    // Both reading preferences persist across launches via @AppStorage.
+    @AppStorage("readingMode") private var readingModeRaw = ReadingMode.study.rawValue
     @AppStorage("readerFontScale") private var fontScale: Double = 1.0
 
-    var body: some View {
-        ScrollView {
-            ZStack {
-                Color(.systemGroupedBackground).ignoresSafeArea()
-                LinearGradient(
-                    gradient: Gradient(colors: [.orange.opacity(0.12), .yellow.opacity(0.05)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+    /// Study mode needs aligned sources; fall back to Gurmukhi when this
+    /// bani's translations don't line up stanza-for-stanza.
+    private var mode: ReadingMode {
+        let stored = ReadingMode(rawValue: readingModeRaw) ?? .gurmukhi
+        return (stored == .study && !shabad.isAligned) ? .gurmukhi : stored
+    }
 
-                VStack(spacing: 24) {
-                    title
-                    audioPlayer
-                    languagePicker
-                    textSizeControl
-                    scripture
-                    Spacer()
+    private var availableModes: [ReadingMode] {
+        shabad.isAligned ? ReadingMode.allCases : [.gurmukhi, .roman, .meaning]
+    }
+
+    var body: some View {
+        ZStack {
+            Color(.systemGroupedBackground).ignoresSafeArea()
+            LinearGradient(
+                gradient: Gradient(colors: [.orange.opacity(0.12), .yellow.opacity(0.05)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            ScrollView {
+                LazyVStack(spacing: 14) {
+                    header
+                    modePicker
+
+                    if mode == .study {
+                        ForEach(shabad.gurmukhi) { block in
+                            studyCard(for: block)
+                        }
+                    } else {
+                        ForEach(shabad.blocks(for: mode)) { block in
+                            blockCard(for: block)
+                        }
+                    }
                 }
-                .padding(.bottom, 40)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                .frame(maxWidth: 700)
+                .frame(maxWidth: .infinity)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) { playerBar }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { fontSizeMenu }
+        }
         .onAppear { isAnimating = true }
         // Stop audio + release the wake-lock when the user navigates away.
         .onDisappear { audio.stop() }
     }
 
-    // MARK: - Title
+    // MARK: - Header
 
-    private var title: some View {
-        Text(shabad.title)
-            .font(.system(size: 32, weight: .bold, design: .serif))
-            .foregroundColor(.orange)
-            .padding(.top, 20)
-            .opacity(isAnimating ? 1 : 0)
-            .offset(y: isAnimating ? 0 : -20)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimating)
+    private var header: some View {
+        VStack(spacing: 4) {
+            Text(shabad.gurmukhiTitle)
+                .font(.system(size: 32, weight: .bold, design: .serif))
+                .foregroundColor(.orange)
+
+            Text("\(shabad.title)  ·  \(shabad.subtitle)")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+        .padding(.top, 12)
+        .opacity(isAnimating ? 1 : 0)
+        .offset(y: isAnimating ? 0 : -16)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.05), value: isAnimating)
     }
 
-    // MARK: - Audio player
+    // MARK: - Mode picker
 
-    private var audioPlayer: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 28) {
-                transportButton(system: "gobackward.5", large: false) {
-                    audio.seek(by: -5)
+    private var modePicker: some View {
+        // Bind to the *effective* mode so a bani without Study support still
+        // shows a selected segment when the stored preference is Study.
+        Picker("Reading mode", selection: Binding(
+            get: { mode.rawValue },
+            set: { readingModeRaw = $0 }
+        )) {
+            ForEach(availableModes) { mode in
+                Text(mode.rawValue).tag(mode.rawValue)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - Single-language stanza card
+
+    private func blockCard(for block: LanguageBlock) -> some View {
+        VStack(spacing: 10) {
+            markerBadge(block.marker)
+
+            if mode == .meaning {
+                Text(block.text)
+                    .font(.system(size: 17 * fontScale, design: .serif))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ForEach(Array(block.lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(size: (mode == .gurmukhi ? 23 : 18) * fontScale,
+                                      design: .serif))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
                 }
+            }
+        }
+        .padding(18)
+        .background(cardBackground)
+        .animation(.easeInOut(duration: 0.2), value: fontScale)
+    }
 
-                transportButton(system: audio.isPlaying ? "pause.fill" : "play.fill", large: true) {
-                    audio.togglePlayPause(fileName: audioFileName)
-                }
+    // MARK: - Study card (all three languages, stanza by stanza)
 
-                transportButton(system: "goforward.5", large: false) {
-                    audio.seek(by: 5)
+    /// Safe because `isAligned` guarantees the three arrays share the same
+    /// length and marker sequence.
+    private func studyCard(for block: LanguageBlock) -> some View {
+        let index = block.id - 1
+        let translit = shabad.translit[index]
+        let english = shabad.english[index]
+
+        return VStack(alignment: .leading, spacing: 12) {
+            markerBadge(block.marker)
+                .frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(block.lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(size: 21 * fontScale, design: .serif))
                 }
             }
 
-            // Scrubber + time labels — only meaningful once a track is loaded.
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(translit.lines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(size: 15 * fontScale))
+                        .italic()
+                        .foregroundColor(.orange)
+                }
+            }
+
+            Divider()
+
+            Text(english.text)
+                .font(.system(size: 15 * fontScale))
+                .foregroundColor(.secondary)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground)
+        .animation(.easeInOut(duration: 0.2), value: fontScale)
+    }
+
+    // MARK: - Card chrome
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color(.secondarySystemGroupedBackground))
+            .shadow(color: .black.opacity(0.07), radius: 6, x: 0, y: 3)
+    }
+
+    /// Pauri number chip. Gurmukhi mode keeps the authentic ॥੧॥ inside the
+    /// text itself, so the chip only shows where the marker was stripped.
+    @ViewBuilder
+    private func markerBadge(_ marker: String?) -> some View {
+        if let marker, mode != .gurmukhi {
+            Text("॥ \(marker) ॥")
+                .font(.caption.weight(.bold))
+                .foregroundColor(.orange)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.orange.opacity(0.12)))
+        }
+    }
+
+    // MARK: - Font size menu
+
+    private var fontSizeMenu: some View {
+        Menu {
+            Button {
+                fontScale = min(1.8, fontScale + 0.1)
+            } label: {
+                Label("Larger", systemImage: "textformat.size.larger")
+            }
+            Button {
+                fontScale = max(0.8, fontScale - 0.1)
+            } label: {
+                Label("Smaller", systemImage: "textformat.size.smaller")
+            }
+            Button("Reset") { fontScale = 1.0 }
+        } label: {
+            Image(systemName: "textformat.size")
+        }
+    }
+
+    // MARK: - Floating audio bar
+
+    private var playerBar: some View {
+        VStack(spacing: 10) {
             if audio.duration > 0 {
                 VStack(spacing: 2) {
                     Slider(
@@ -99,100 +237,82 @@ struct ShabadDetailView: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                 }
-                .padding(.horizontal)
-                .transition(.opacity)
+            }
+
+            HStack {
+                speedMenu
+                    .frame(width: 56, alignment: .leading)
+
+                Spacer()
+
+                HStack(spacing: 26) {
+                    transportButton(system: "gobackward.5", large: false) {
+                        audio.seek(by: -5)
+                    }
+                    transportButton(system: audio.isPlaying ? "pause.fill" : "play.fill",
+                                    large: true) {
+                        audio.togglePlayPause(fileName: shabad.audioFileName,
+                                              title: shabad.title)
+                    }
+                    transportButton(system: "goforward.5", large: false) {
+                        audio.seek(by: 5)
+                    }
+                }
+
+                Spacer()
+
+                // invisible twin of the speed menu keeps the transport centred
+                speedMenu
+                    .frame(width: 56)
+                    .hidden()
             }
         }
-        .padding(.bottom, 8)
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(Color.orange.opacity(0.2))
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+        .frame(maxWidth: 700)
     }
 
-    private func transportButton(system: String, large: Bool, action: @escaping () -> Void) -> some View {
+    /// Slower speeds help learners follow the Gurmukhi word by word.
+    private var speedMenu: some View {
+        Menu {
+            Picker("Speed", selection: $audio.playbackRate) {
+                Text("0.75×").tag(Float(0.75))
+                Text("1×").tag(Float(1.0))
+                Text("1.25×").tag(Float(1.25))
+                Text("1.5×").tag(Float(1.5))
+            }
+        } label: {
+            Text(speedLabel)
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(.orange)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.orange.opacity(0.12)))
+        }
+    }
+
+    private var speedLabel: String {
+        audio.playbackRate == 1.0
+            ? "1×"
+            : String(format: "%g×", audio.playbackRate)
+    }
+
+    private func transportButton(system: String, large: Bool,
+                                 action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
-                .font(large ? .largeTitle : .title)
-                .frame(width: large ? 60 : 44, height: large ? 60 : 44)
+                .font(large ? .title : .title3)
+                .frame(width: large ? 56 : 42, height: large ? 56 : 42)
                 .background(Color.orange)
                 .foregroundColor(.white)
                 .clipShape(Circle())
                 .shadow(color: .orange.opacity(0.3), radius: 4, x: 0, y: 2)
-        }
-    }
-
-    // MARK: - Language picker
-
-    private var languagePicker: some View {
-        Picker("Language", selection: $selectedLanguage) {
-            ForEach(Language.allCases, id: \.self) { language in
-                Text(language.rawValue).tag(language)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-        .opacity(isAnimating ? 1 : 0)
-        .animation(.easeInOut.delay(0.3), value: isAnimating)
-    }
-
-    // MARK: - Text size control
-
-    /// Accessibility win: let readers scale the scripture up/down. Persisted via
-    /// @AppStorage so the choice survives across launches.
-    private var textSizeControl: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "textformat.size.smaller")
-                .foregroundColor(.secondary)
-
-            Slider(value: $fontScale, in: 0.8...1.8, step: 0.1)
-                .tint(.orange)
-
-            Image(systemName: "textformat.size.larger")
-                .foregroundColor(.secondary)
-        }
-        .font(.footnote)
-        .padding(.horizontal)
-    }
-
-    // MARK: - Scripture
-
-    private var scripture: some View {
-        // Base size differs by language (Gurmukhi reads better a touch larger),
-        // then multiplied by the user's persisted scale.
-        let base: CGFloat = selectedLanguage == .punjabi ? 24 : 20
-        return Text(content)
-            .font(.system(size: base * fontScale, design: .serif))
-            .padding()
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: 5)
-            )
-            .padding(.horizontal)
-            .opacity(isAnimating ? 1 : 0)
-            .scaleEffect(isAnimating ? 1 : 0.9)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4), value: isAnimating)
-            // Smoothly animate font-size changes.
-            .animation(.easeInOut(duration: 0.2), value: fontScale)
-    }
-
-    // MARK: - Helpers
-
-    private var content: String {
-        switch selectedLanguage {
-        case .punjabi:  return shabad.punjabi
-        case .hinglish: return shabad.hinglish
-        case .english:  return shabad.english
-        }
-    }
-
-    /// Maps a bani title to its bundled audio resource name.
-    private var audioFileName: String {
-        switch shabad.title {
-        case "Mool Mantar":      return "mool_mantar"
-        case "Japji Sahib":      return "japji_sahib"
-        case "So Dar (Rehras)":  return "so_dar"
-        case "Sohila":           return "sohila"
-        default:                  return ""
         }
     }
 }
