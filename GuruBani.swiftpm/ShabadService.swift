@@ -1,18 +1,12 @@
 import Foundation
-
-
-struct ShabadPage: Codable {
-    let page: Int
-    let content: String
-}
+import os
 
 class ShabadService {
-    static func loadShabads() -> [Shabad] {
-        return Shabad.allShabads
-    }
+    private static let log = Logger(subsystem: "GuruBani", category: "data")
 
-    static func loadShabadsFromDocuments() -> [Shabad] {
-        return [] 
+    static func loadShabads() -> [Shabad] {
+        let shabads = Shabad.allShabads
+        log.debug("loadShabads() -> \(shabads.count) banis")
+        return shabads
     }
 }
-
